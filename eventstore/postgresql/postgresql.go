@@ -1,21 +1,14 @@
 package badger
 
 import (
-	"bytes"
 	"database/sql"
 	"database/sql/driver"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
-	"github.com/mishudark/eventhus"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 	"log"
 	"time"
 
-	badger "github.com/dgraph-io/badger/v2"
 	_ "github.com/lib/pq"
 	"github.com/mishudark/triper"
 )
