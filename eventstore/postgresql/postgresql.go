@@ -2,11 +2,19 @@ package badger
 
 import (
 	"bytes"
+	"database/sql"
+	"database/sql/driver"
 	"encoding/gob"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/lib/pq"
+	"gopkg.in/mgo.v2/bson"
+	"log"
 	"time"
 
 	badger "github.com/dgraph-io/badger/v2"
+	_ "github.com/lib/pq"
 	"github.com/mishudark/triper"
 )
 
@@ -23,40 +31,39 @@ type EventDB struct {
 	AggregateID   string
 	AggregateType string
 	CommandID     string
-	RawData       []byte
+	RawData       driver.Value
 	Timestamp     time.Time
 	Version       int
 }
 
 // Client for access to badger
 type Client struct {
-	session *badger.DB
+	connector *sql.DB
 	reg     triper.Register
 }
 
 var _ triper.EventStore = (*Client)(nil)
 
-// NewClient generates a new client for access to badger using badgerhold
-func NewClient(dbDir string, reg triper.Register) (*Client, error) {
-	options := badger.DefaultOptions(dbDir)
-	options.ValueDir = dbDir
 
-	session, err := badger.Open(options)
+
+// NewClient generates a new client for access to badger using badgerhold
+func NewClient(psqlInfo string, reg triper.Register) (*Client, error) {
+
+	connector, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	cli := &Client{
-		session: session,
+		connector: connector,
 		reg:     reg,
 	}
-
 	return cli, nil
 }
 
 // Close db connection
 func (c *Client) Close() error {
-	return c.session.Close()
+	return c.connector.Close()
 }
 
 func (c *Client) save(events []triper.Event, version int, safe bool) error {
@@ -64,10 +71,12 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return nil
 	}
 
-	aggregateID := events[0].AggregateID
+	err := c.connector.Ping()
+	if err != nil {
+		panic(err)
+	}
 
-	txn := c.session.NewTransaction(true)
-	defer txn.Discard()
+	aggregateID := events[0].AggregateID
 
 	for _, event := range events {
 		raw, err := encode(event.Data)
@@ -84,16 +93,19 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			RawData:       raw,
 		}
 
-		blob, err := encode(item)
+		/*blob, err := encode(item)
 		if err != nil {
 			return err
 		}
+		*/
+
 
 		// the id contains the aggregateID as prefix
 		// aggregateID.eventID
-		id := fmt.Sprintf("%s.%s", aggregateID, event.ID)
-		err = txn.Set([]byte(id), blob)
+		//id := fmt.Sprintf("%s.%s", aggregateID, event.ID)
+		_, err = c.connector.Exec("INSERT INTO items (attrs) VALUES($1)", item)
 		if err != nil {
+			log.Fatal(err)
 			return err
 		}
 	}
@@ -109,23 +121,16 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return err
 	}
 
-	item, err := txn.Get([]byte(aggregate.ID))
+	_, err = c.connector.Exec("SELECT * FROM events WHERE _id = $1", aggregate.ID)
 	if version == 0 {
-		switch err {
-		case nil:
-			return fmt.Errorf("badger: %s, aggregate already exists", aggregate.ID)
-		case badger.ErrKeyNotFound:
-			err = txn.Set([]byte(aggregate.ID), aggregateBlob)
-		default: // another error differente from key not found is not desirable
-			return err
-		}
-	} else {
-		var blob []byte
-		_, err = item.ValueCopy(blob)
-		if err != nil {
+		if err == nil {
+			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregate.ID)
+		} else{
 			return err
 		}
 
+	} else {
+		var blob []byte
 		var payload AggregateDB
 		err = decode(blob, &payload)
 		if err != nil {
@@ -136,14 +141,14 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, payload.Version)
 		}
 
-		err = txn.Set([]byte(aggregate.ID), aggregateBlob)
+		_, err = c.connector.Exec("INSERT INTO items (attrs) VALUES($1)", aggregateBlob)
 	}
 
 	if err != nil {
 		return err
 	}
 
-	return txn.Commit()
+	return nil
 }
 
 // SafeSave store the events without check the current version
@@ -217,16 +222,18 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	return events, nil
 }
 
-func encode(value interface{}) ([]byte, error) {
-	var buff bytes.Buffer
-	en := gob.NewEncoder(&buff)
+func encode(value interface{}) (driver.Value, error) {
+	// Marshal event data if there is any.
+	if value != nil {
+		rawData, err := json.Marshal(value)
+		if err != nil {
+			return nil, err
+		}
+		return rawData, nil
 
-	err := en.Encode(value)
-	if err != nil {
-		return nil, err
 	}
 
-	return buff.Bytes(), nil
+	return nil, errors.New("null value found")
 }
 
 func decode(data []byte, value interface{}) error {
