@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
+	"github.com/mishudark/eventhus"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"time"
@@ -112,7 +114,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 
 	// Now that events are saved, aggregate version needs to be updated
 	aggregate := AggregateDB{
-		ID:      events[0].AggregateID,
+		ID:      aggregateID,
 		Version: version + len(events),
 	}
 
@@ -121,10 +123,10 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return err
 	}
 
-	_, err = c.connector.Exec("SELECT * FROM events WHERE _id = $1", aggregate.ID)
+	_, err = c.connector.Exec("SELECT * FROM events WHERE _id = $1", aggregateID)
 	if version == 0 {
 		if err == nil {
-			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregate.ID)
+			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		} else{
 			return err
 		}
@@ -168,34 +170,17 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		eventsDB []EventDB
 	)
 
-	c.session.View(func(txn *badger.Txn) error {
-		it := txn.NewIterator(badger.DefaultIteratorOptions)
-		defer it.Close()
+	aggregate, err := c.connector.Exec("SELECT * FROM events WHERE _id = $1", aggregateID)
 
-		// prexi has the format aggregateID.
-		prefix := []byte(aggregateID + ".")
-		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			item := it.Item()
-			err := item.Value(func(v []byte) error {
-				var event EventDB
-
-				err := decode(v, &event)
-				if err != nil {
-					return err
-				}
-
-				eventsDB = append(eventsDB, event)
-				return nil
-			})
-
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
+	if err != nil {
+		return events, err
+	}
+	var event EventDB
+	err = decode(aggregate, &event)
+	if err != nil {
+		return nil, err
+	}
+	eventsDB = append(eventsDB, event)
 	events = make([]triper.Event, len(eventsDB))
 
 	for i, dbEvent := range eventsDB {
@@ -236,14 +221,16 @@ func encode(value interface{}) (driver.Value, error) {
 	return nil, errors.New("null value found")
 }
 
-func decode(data []byte, value interface{}) error {
-	var buff bytes.Buffer
-	de := gob.NewDecoder(&buff)
+func decode(rawData driver.Value, value interface{}) error {
+	if rawData != nil {
+		b, ok := value.([]byte)
+		if !ok {
+			return errors.New("type assertion to []byte failed")
+		}
 
-	_, err := buff.Write(data)
-	if err != nil {
-		return err
+		return json.Unmarshal(b, &rawData)
+
 	}
 
-	return de.Decode(value)
+	return errors.New("null value found")
 }
