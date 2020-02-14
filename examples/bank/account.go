@@ -3,7 +3,7 @@ package bank
 import (
 	"errors"
 
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 )
 
 // ErrBalanceOut when you don't have balance to perform the operation

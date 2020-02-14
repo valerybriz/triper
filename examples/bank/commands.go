@@ -1,6 +1,6 @@
 package bank
 
-import "github.com/mishudark/triper"
+import "github.com/valerybriz/triper"
 
 //CreateAccount assigned to an owner
 type CreateAccount struct {

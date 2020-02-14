@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/mishudark/triper"
-	"github.com/mishudark/triper/commandhandler/basic"
-	"github.com/mishudark/triper/config"
-	"github.com/mishudark/triper/examples/bank"
+	"github.com/valerybriz/triper"
+	"github.com/valerybriz/triper/commandhandler/basic"
+	"github.com/valerybriz/triper/config"
+	"github.com/valerybriz/triper/examples/bank"
+
 )
 
 func getConfig() (triper.CommandBus, error) {

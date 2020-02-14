@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/mishudark/triper"
-	"github.com/mishudark/triper/examples/bank"
+	"github.com/valerybriz/triper"
+	"github.com/valerybriz/triper/examples/bank"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 
 			//1) Create an account
 			account := bank.CreateAccount{
-				Owner: "mishudark",
+				Owner: "valerybriz",
 			}
 
 			account.Type = "create_account"
