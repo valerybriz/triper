@@ -1,4 +1,4 @@
-package badger
+package postgresql
 
 import (
 	"database/sql"
