@@ -1,6 +1,6 @@
 package async
 
-import "github.com/mishudark/triper"
+import "github.com/valerybriz/triper"
 
 var workerPool = make(chan chan triper.Command)
 

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	badger "github.com/dgraph-io/badger/v2"
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 )
 
 // AggregateDB defines version and id of an aggregate

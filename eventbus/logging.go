@@ -3,7 +3,7 @@ package eventbus
 import (
 	"log"
 
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 )
 
 // Logger logs messages sent to the event bus.

@@ -3,7 +3,7 @@ package eventbus
 import (
 	"fmt"
 
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 )
 
 // MultiPublisherError is returned from publish when

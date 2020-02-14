@@ -6,7 +6,7 @@ import (
 	"github.com/golang/glog"
 	"reflect"
 
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 )
 
 // ErrInvalidID missing initial event

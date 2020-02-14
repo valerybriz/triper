@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 	nats "github.com/nats-io/nats.go"
 )
 

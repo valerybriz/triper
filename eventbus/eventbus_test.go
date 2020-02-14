@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 )
 
 type producerStubEntry struct {

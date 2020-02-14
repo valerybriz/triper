@@ -1,12 +1,13 @@
 package config
 
 import (
-	"github.com/mishudark/triper"
-	"github.com/mishudark/triper/commandbus/async"
-	"github.com/mishudark/triper/eventbus/mosquitto"
-	"github.com/mishudark/triper/eventbus/nats"
-	"github.com/mishudark/triper/eventbus/rabbitmq"
-	"github.com/mishudark/triper/eventstore/badger"
+	"github.com/valerybriz/triper"
+	"github.com/valerybriz/triper/commandbus/async"
+	"github.com/valerybriz/triper/eventbus/mosquitto"
+	"github.com/valerybriz/triper/eventbus/nats"
+	"github.com/valerybriz/triper/eventbus/rabbitmq"
+	"github.com/valerybriz/triper/eventstore/badger"
+	"github.com/valerybriz/triper/eventstore/postgresql"
 )
 
 // EventBus returns an triper.EventBus impl
@@ -81,6 +82,13 @@ func Mosquitto(method string, host string, port int, clientID string) EventBus {
 func Badger(dbDir string, reg triper.Register) EventStore {
 	return func() (triper.EventStore, error) {
 		return badger.NewClient(dbDir, reg)
+	}
+}
+
+// Postgres is a implementation of Postgresql EventStore
+func Postgres(dbInfo string, reg triper.Register) EventStore {
+	return func() (triper.EventStore, error) {
+		return postgresql.NewClient(dbInfo, reg)
 	}
 }
 

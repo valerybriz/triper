@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 	"log"
 	"os"
 )

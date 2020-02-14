@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/mishudark/triper"
+	"github.com/valerybriz/triper"
 
 	"github.com/streadway/amqp"
 )
