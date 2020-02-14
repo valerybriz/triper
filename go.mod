@@ -1,4 +1,4 @@
-module github.com/mishudark/triper
+module github.com/valerybriz/triper
 
 go 1.13
 
