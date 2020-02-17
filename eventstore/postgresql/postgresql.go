@@ -160,6 +160,9 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
 		events   []triper.Event
 		eventsDB []EventDB
+		id string
+		version int
+		jevents driver.Value
 	)
 
 	var aggregate AggregateDB
@@ -168,16 +171,16 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	if err != nil {
 		return events, err
 	}
+	defer rows.Close()
 	for rows.Next() {
-		err := rows.Scan(&aggregate)
+		err := rows.Scan(&id, &version, &jevents)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Error on cursor %s", err)
 		}
-		fmt.Printf("%#v\n", aggregate)
+		fmt.Printf("aggregate %#v\n %#v\n %#v\n", id, version, jevents)
 	}
 
-	fmt.Printf("%#v\n", aggregate.Events)
-	if err = decode(aggregate.Events, eventsDB); err != nil {
+	if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
 
