@@ -98,7 +98,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		// the id contains the aggregateID as prefix
 		// aggregateID.eventID
 		//id := fmt.Sprintf("%s.%s", aggregateID, event.ID)
-		_, err = c.connector.Exec("INSERT INTO items (attrs) VALUES($1)", item)
+		_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", item)
 		if err != nil {
 			log.Fatal(err)
 			return err
@@ -136,7 +136,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, payload.Version)
 		}
 
-		_, err = c.connector.Exec("INSERT INTO items (attrs) VALUES($1)", aggregateBlob)
+		_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", aggregateBlob)
 	}
 
 	if err != nil {
