@@ -98,9 +98,10 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		// the id contains the aggregateID as prefix
 		// aggregateID.eventID
 		//id := fmt.Sprintf("%s.%s", aggregateID, event.ID)
+		log.Printf("id %s", item.ID)
 		_, err = c.connector.Exec("INSERT INTO events (_id) VALUES($1)", item.ID)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Error inserting initial event %s", err)
 			return err
 		}
 	}
