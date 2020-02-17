@@ -133,7 +133,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		log.Println("Version is not 0")
 
 		if aggregate.Version != version {
-			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, payload.Version)
+			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
 		_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", aggregate)
