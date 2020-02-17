@@ -120,7 +120,8 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	if version == 0 {
 		log.Println("Version is 0")
 		if err == nil {
-			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
+			//return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
+			log.Printf("already exists? %s", err)
 		} else{
 			_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
 			if err != nil {
@@ -133,7 +134,8 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		log.Println("Version is not 0")
 
 		if aggregate.Version != version {
-			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
+			log.Println("version is not the same")
+			//return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
 		_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
