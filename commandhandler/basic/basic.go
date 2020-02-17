@@ -79,6 +79,9 @@ func (h *Handler) Handle(command triper.Command) (err error) {
 		return triper.NewFailure(err, triper.FailureSavingOnStorage, command)
 	}
 
-	err = h.repository.PublishEvents(aggregate, h.bucket, h.subset)
-	return triper.NewFailure(err, triper.FailurePublishingEvents, command)
+	if err = h.repository.PublishEvents(aggregate, h.bucket, h.subset); err != nil{
+		return triper.NewFailure(err, triper.FailurePublishingEvents, command)
+	}
+	return nil
+
 }
