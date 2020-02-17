@@ -159,13 +159,13 @@ func (c *Client) Save(events []triper.Event, version int) error {
 func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
 		events   []triper.Event
-		eventsDB []EventDB
+		//eventsDB []EventDB
 		id string
 		version int
 		jevents driver.Value
 	)
 
-	var aggregate AggregateDB
+	//var aggregate AggregateDB
 
 	rows, err := c.connector.Query("SELECT * FROM events WHERE _id = $1", aggregateID)
 	if err != nil {
@@ -179,7 +179,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		}
 		fmt.Printf("aggregate %#v\n %#v\n %#v\n", id, version, jevents)
 	}
-
+	/*
 	if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
@@ -191,7 +191,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	}
 	//eventsDB = append(eventsDB, event)
 
-	/*
+
 	for i, dbEvent := range events {
 		dataType, err := c.reg.Get(dbEvent.Type)
 		if err != nil {
@@ -229,7 +229,7 @@ func encode(value interface{}) (driver.Value, error) {
 
 	}
 
-	return nil, errors.New("null value found")
+	return nil, errors.New("encode error null value found")
 }
 
 func decode(rawData driver.Value, value interface{}) error {
@@ -243,5 +243,5 @@ func decode(rawData driver.Value, value interface{}) error {
 
 	}
 
-	return errors.New("null value found")
+	return errors.New("decode error, null value found")
 }
