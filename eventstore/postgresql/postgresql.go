@@ -17,6 +17,7 @@ import (
 type AggregateDB struct {
 	ID      string
 	Version int
+	Events driver.Value
 }
 
 // EventDB defines the structure of the events to be stored
@@ -71,15 +72,16 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		panic(err)
 	}
 
+	eventsDB := make([]EventDB, len(events))
 	aggregateID := events[0].AggregateID
 
-	for _, event := range events {
+	for i, event := range events {
 		raw, err := encode(event.Data)
 		if err != nil {
 			return err
 		}
 
-		item := EventDB{
+		eventsDB[i] = EventDB{
 			ID:            event.ID,
 			Type:          event.Type,
 			AggregateID:   event.AggregateID,
@@ -88,60 +90,56 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			RawData:       raw,
 		}
 
-		/*blob, err := encode(item)
-		if err != nil {
-			return err
-		}
-		*/
 
 
 		// the id contains the aggregateID as prefix
 		// aggregateID.eventID
 		//id := fmt.Sprintf("%s.%s", aggregateID, event.ID)
-		log.Printf("id %s", item.ID)
-		_, err = c.connector.Exec("INSERT INTO events (_id) VALUES($1)", item.ID)
-		if err != nil {
-			log.Fatalf("Error inserting initial event %s", err)
-			return err
-		}
+		log.Printf("id %s", event.AggregateID)
+
+	}
+
+	blob, err := encode(eventsDB)
+	if err != nil {
+		return err
 	}
 
 	// Now that events are saved, aggregate version needs to be updated
 	aggregate := AggregateDB{
 		ID:      aggregateID,
 		Version: version + len(events),
+		Events: blob,
 	}
 
-	aggregateBlob, err := encode(aggregate)
+	/*aggregateBlob, err := encode(aggregate)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	_, err = c.connector.Exec("SELECT * FROM events WHERE _id = $1", aggregateID)
 	if version == 0 {
+		log.Println("Version is 0")
 		if err == nil {
 			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		} else{
-			return err
+			_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", aggregate)
+			if err != nil {
+				log.Fatalf("Error inserting initial event %s", err)
+				return err
+			}
 		}
 
 	} else {
-		var blob []byte
-		var payload AggregateDB
-		err = decode(blob, &payload)
-		if err != nil {
-			return err
-		}
+		log.Println("Version is not 0")
 
-		if payload.Version != version {
+		if aggregate.Version != version {
 			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, payload.Version)
 		}
 
-		_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", aggregateBlob)
-	}
-
-	if err != nil {
-		return err
+		_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", aggregate)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
