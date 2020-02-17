@@ -107,7 +107,8 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	// Now that events are saved, aggregate version needs to be updated
 	aggregate := AggregateDB{
 		ID:      aggregateID,
-		Version: version + len(events),
+		//Version: version + len(events),
+		Version: version,
 		Events: blob,
 	}
 
@@ -135,6 +136,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 
 		if aggregate.Version != version {
 			log.Println("version is not the same")
+
 			//return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
