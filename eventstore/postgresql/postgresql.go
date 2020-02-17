@@ -88,6 +88,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			AggregateType: event.AggregateType,
 			CommandID:     event.CommandID,
 			RawData:       raw,
+			Version:       1 + version + i,
 		}
 
 
@@ -107,8 +108,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	// Now that events are saved, aggregate version needs to be updated
 	aggregate := AggregateDB{
 		ID:      aggregateID,
-		//Version: version + len(events),
-		Version: version,
+		Version: version + len(eventsDB),
 		Events: blob,
 	}
 
