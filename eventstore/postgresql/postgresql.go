@@ -116,13 +116,13 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return err
 	}*/
 
-	_, err = c.connector.Exec("SELECT * FROM events WHERE _id = $1", aggregateID)
+	_, err = c.connector.Query("SELECT * FROM events WHERE _id = $1", aggregateID)
 	if version == 0 {
 		log.Println("Version is 0")
 		if err == nil {
 			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		} else{
-			_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", aggregate)
+			_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
 			if err != nil {
 				log.Fatalf("Error inserting initial event %s", err)
 				return err
@@ -136,7 +136,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
-		_, err = c.connector.Exec("INSERT INTO events (attrs) VALUES($1)", aggregate)
+		_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
 		if err != nil {
 			return err
 		}
@@ -162,26 +162,40 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		eventsDB []EventDB
 	)
 
-	aggregate, err := c.connector.Exec("SELECT * FROM events WHERE _id = $1", aggregateID)
+	var aggregate AggregateDB
 
+	rows, err := c.connector.Query("SELECT * FROM events WHERE _id = $1", aggregateID)
 	if err != nil {
 		return events, err
 	}
-	var event EventDB
-	err = decode(aggregate, &event)
+	for rows.Next() {
+		err := rows.Scan(&aggregate)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Printf("%#v\n", aggregate)
+	}
+
+	fmt.Printf("%#v\n", aggregate.Events)
+	if err = decode(aggregate.Events, eventsDB); err != nil {
+		return events, err
+	}
+
+	events = make([]triper.Event, 1)
+	err = decode(aggregate.Events, &events)
 	if err != nil {
 		return nil, err
 	}
-	eventsDB = append(eventsDB, event)
-	events = make([]triper.Event, len(eventsDB))
+	//eventsDB = append(eventsDB, event)
 
-	for i, dbEvent := range eventsDB {
+	/*
+	for i, dbEvent := range events {
 		dataType, err := c.reg.Get(dbEvent.Type)
 		if err != nil {
 			return events, err
 		}
 
-		if err = decode(dbEvent.RawData, dataType); err != nil {
+		if err = decode(dbEvent.Data, dataType); err != nil {
 			return events, err
 		}
 
@@ -195,6 +209,8 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			Data:          dataType,
 		}
 	}
+
+	 */
 
 	return events, nil
 }
