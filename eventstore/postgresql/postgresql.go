@@ -168,24 +168,24 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		//eventsDB []EventDB
 		id string
 		version int
-		jevents json.RawMessage
+		eventsDB []EventDB
 	)
 
 	//var aggregate AggregateDB
 
-	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jevents)
+	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &eventsDB)
 	if err != nil {
 		log.Fatalln("error couldn't find the aggregate id")
 		return nil, err
 	}
-	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, jevents)
+	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
 
 
 	/*if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
 
-   */
+
 
 	eventsDB := make([]EventDB, version)
 	err = decode(jevents, &eventsDB)
@@ -193,13 +193,13 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return nil, err
 	}
 	//eventsDB = append(eventsDB, event)
-
+	*/
 
 	for i, dbEvent := range eventsDB {
 		//dataType, err := c.reg.Get(dbEvent.Type)
-		if err != nil {
-			return events, err
-		}
+		//if err != nil {
+	//		return events, err
+	//	}
 
 		//if err = decode(dbEvent.RawData, dataType); err != nil {
 		//	return events, err
