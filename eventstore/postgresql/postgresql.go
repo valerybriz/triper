@@ -168,7 +168,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		//eventsDB []EventDB
 		id string
 		version int
-		jevents driver.Value
+		jevents json.RawMessage
 	)
 
 	//var aggregate AggregateDB
@@ -235,20 +235,10 @@ func encode(value interface{}) (driver.Value, error) {
 	return nil, errors.New("encode error null value found")
 }
 
-func decode(rawData driver.Value, value interface{}) error {
+func decode(rawData json.RawMessage, value interface{}) error {
 	if rawData != nil {
-		switch v := rawData.(type) {
-		case []byte:
-			log.Println("its a byte")
-			return json.Unmarshal(v, &value)
-		default:
-			log.Println("its not a byte")
-			b, ok := rawData.([]byte)
-			if !ok {
-				return errors.New("type assertion to []byte failed")
-			}
-			return json.Unmarshal(b, &value)
-		}
+
+		return json.Unmarshal(rawData, &value)
 
 	}
 
