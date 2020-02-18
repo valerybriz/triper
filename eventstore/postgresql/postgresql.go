@@ -239,8 +239,10 @@ func decode(rawData driver.Value, value interface{}) error {
 	if rawData != nil {
 		switch v := rawData.(type) {
 		case []byte:
-			return json.Unmarshal(v, value)
+			log.Println("its a byte")
+			return json.Unmarshal(v, &value)
 		default:
+			log.Println("its not a byte")
 			b, ok := rawData.([]byte)
 			if !ok {
 				return errors.New("type assertion to []byte failed")
