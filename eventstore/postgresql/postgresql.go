@@ -181,13 +181,14 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		}
 		fmt.Printf("aggregate %#v\n %#v\n %#v\n", id, version, jevents)
 	}
-	/*
-	if err = decode(jevents, eventsDB); err != nil {
+
+	/*if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
+	*/
 
-	events = make([]triper.Event, 1)
-	err = decode(aggregate.Events, &events)
+	events = make([]triper.Event, version)
+	err = decode(jevents, &events)
 	if err != nil {
 		return nil, err
 	}
@@ -211,11 +212,9 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			CommandID:     dbEvent.CommandID,
 			Version:       dbEvent.Version,
 			Type:          dbEvent.Type,
-			Data:          dataType,
+			Data:          dbEvent.Data,
 		}
 	}
-
-	 */
 
 	return events, nil
 }
