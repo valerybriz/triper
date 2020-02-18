@@ -15,21 +15,21 @@ import (
 
 // AggregateDB defines version and id of an aggregate
 type AggregateDB struct {
-	ID      string
-	Version int
-	Events driver.Value
+	ID      string `json:"_id"`
+	Version int `json:"version"`
+	Events driver.Value `json:"events"`
 }
 
 // EventDB defines the structure of the events to be stored
 type EventDB struct {
-	ID            string
-	Type          string
-	AggregateID   string
-	AggregateType string
-	CommandID     string
-	RawData       driver.Value
-	Timestamp     time.Time
-	Version       int
+	ID            string `json:"_id"`
+	Type          string `json:"type"`
+	AggregateID   string `json:"aggregate_id"`
+	AggregateType string `json:"aggregate_type"`
+	CommandID     string `json:"command_id"`
+	RawData       driver.Value `json:"raw_data"`
+	Timestamp     time.Time `json:"timestamp"`
+	Version       int `json:"version"`
 }
 
 // Client for access to badger
@@ -186,23 +186,23 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	}
 
    */
-	events = make([]triper.Event, version)
-	err = decode(jevents, &events)
+	eventsDB := make([]EventDB, version)
+	err = decode(jevents, &eventsDB)
 	if err != nil {
 		return nil, err
 	}
 	//eventsDB = append(eventsDB, event)
 
 
-	for i, dbEvent := range events {
-		dataType, err := c.reg.Get(dbEvent.Type)
+	for i, dbEvent := range eventsDB {
+		//dataType, err := c.reg.Get(dbEvent.Type)
 		if err != nil {
 			return events, err
 		}
 
-		if err = decode(dbEvent.Data, dataType); err != nil {
-			return events, err
-		}
+		//if err = decode(dbEvent.RawData, dataType); err != nil {
+		//	return events, err
+		//}
 
 
 
@@ -213,7 +213,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			CommandID:     dbEvent.CommandID,
 			Version:       dbEvent.Version,
 			Type:          dbEvent.Type,
-			Data:          dbEvent.Data,
+			Data:          dbEvent.RawData,
 		}
 	}
 
