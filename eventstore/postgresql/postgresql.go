@@ -168,38 +168,41 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		//eventsDB []EventDB
 		id string
 		version int
-		eventsDB []EventDB
+		jevents json.RawMessage
 	)
 
 	//var aggregate AggregateDB
 
-	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &eventsDB)
+	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jevents)
 	if err != nil {
 		log.Fatalln("error couldn't find the aggregate id")
 		return nil, err
 	}
-	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
+
 
 
 	/*if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
 
-
+   */
 
 	eventsDB := make([]EventDB, version)
 	err = decode(jevents, &eventsDB)
 	if err != nil {
+		log.Fatalln("error on decoding")
 		return nil, err
 	}
+
+	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
 	//eventsDB = append(eventsDB, event)
-	*/
+
 
 	for i, dbEvent := range eventsDB {
 		//dataType, err := c.reg.Get(dbEvent.Type)
-		//if err != nil {
-	//		return events, err
-	//	}
+		if err != nil {
+			return events, err
+		}
 
 		//if err = decode(dbEvent.RawData, dataType); err != nil {
 		//	return events, err
@@ -235,7 +238,7 @@ func encode(value interface{}) (driver.Value, error) {
 	return nil, errors.New("encode error null value found")
 }
 
-func decode(rawData json.RawMessage, value interface{}) error {
+func decode(rawData json.RawMessage, value *[]EventDB) error {
 	if rawData != nil {
 
 		return json.Unmarshal(rawData, &value)
