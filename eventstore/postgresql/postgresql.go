@@ -124,7 +124,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		if id == aggregateID {
 			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		} else{
-			_, err = c.connector.Query("INSERT INTO events (_id) VALUES($1)", aggregateID)
+			_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events )
 			if err != nil {
 				log.Fatalf("Error inserting initial event %s", err)
 				return err
@@ -142,7 +142,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
-		_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
+		_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
 		if err != nil {
 			return err
 		}
@@ -167,28 +167,27 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		events   []triper.Event
 		//eventsDB []EventDB
 		id string
-		//version int
-		//jevents driver.Value
-		//aggregate AggregateDB
+		version int
+		jevents driver.Value
 	)
 
 	//var aggregate AggregateDB
 
-	err := c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
+	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jevents)
 	if err != nil {
-		log.Fatalln("error couldnt find the aggregate id")
+		log.Fatalln("error couldn't find the aggregate id")
 		return nil, err
 	}
-	fmt.Printf("aggregate %#v\n ",id)
+	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, jevents)
 
 
 	/*if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
-	
 
-	events = make([]triper.Event, aggregate.Version)
-	err = decode(aggregate.Events, &events)
+   */
+	events = make([]triper.Event, version)
+	err = decode(jevents, &events)
 	if err != nil {
 		return nil, err
 	}
@@ -205,6 +204,8 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			return events, err
 		}
 
+
+
 		// Translate dbEvent to triper.Event
 		events[i] = triper.Event{
 			AggregateID:   aggregateID,
@@ -215,7 +216,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			Data:          dbEvent.Data,
 		}
 	}
-	*/
+
 	return events, nil
 }
 
