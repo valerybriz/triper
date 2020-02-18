@@ -79,6 +79,7 @@ func (h *Handler) Handle(command triper.Command) (err error) {
 		return triper.NewFailure(err, triper.FailureSavingOnStorage, command)
 	}
 
+	//TODO remove if in this last error
 	if err = h.repository.PublishEvents(aggregate, h.bucket, h.subset); err != nil{
 		return triper.NewFailure(err, triper.FailurePublishingEvents, command)
 	}
