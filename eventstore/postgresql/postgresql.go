@@ -164,7 +164,6 @@ func (c *Client) Save(events []triper.Event, version int) error {
 // Load the stored events for an AggregateID
 func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
-		events   []triper.Event
 		//eventsDB []EventDB
 		id string
 		version int
@@ -187,6 +186,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
    */
 
+	events :=  make([]triper.Event, version)
 	eventsDB := make([]EventDB, version)
 	err = decode(jevents, &eventsDB)
 	if err != nil {
@@ -200,9 +200,9 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
 	for i, dbEvent := range eventsDB {
 		//dataType, err := c.reg.Get(dbEvent.Type)
-		if err != nil {
-			return events, err
-		}
+		//if err != nil {
+		//	return events, err
+		//}
 
 		//if err = decode(dbEvent.RawData, dataType); err != nil {
 		//	return events, err
@@ -232,7 +232,6 @@ func encode(value interface{}) (driver.Value, error) {
 			return nil, err
 		}
 		return rawData, nil
-
 	}
 
 	return nil, errors.New("encode error null value found")
@@ -240,10 +239,7 @@ func encode(value interface{}) (driver.Value, error) {
 
 func decode(rawData json.RawMessage, value *[]EventDB) error {
 	if rawData != nil {
-
 		return json.Unmarshal(rawData, &value)
-
 	}
-
 	return errors.New("decode error, null value found")
 }
