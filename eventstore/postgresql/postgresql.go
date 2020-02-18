@@ -186,6 +186,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	}
 
    */
+
 	eventsDB := make([]EventDB, version)
 	err = decode(jevents, &eventsDB)
 	if err != nil {
@@ -236,14 +237,16 @@ func encode(value interface{}) (driver.Value, error) {
 
 func decode(rawData driver.Value, value interface{}) error {
 	if rawData != nil {
-		b, ok := rawData.([]byte)
-		if !ok {
-			return errors.New("type assertion to []byte failed")
+		switch v := rawData.(type) {
+		case []byte:
+			return json.Unmarshal(v, value)
+		default:
+			b, ok := rawData.([]byte)
+			if !ok {
+				return errors.New("type assertion to []byte failed")
+			}
+			return json.Unmarshal(b, &value)
 		}
-
-		json.Unmarshal(b, &value)
-
-		return nil
 
 	}
 
