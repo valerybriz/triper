@@ -170,18 +170,10 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
 	//var aggregate AggregateDB
 
-	rows, err := c.connector.Query("SELECT * FROM events WHERE _id = $1", aggregateID)
-	if err != nil {
-		return events, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		err := rows.Scan(&aggregate)
-		if err != nil {
-			log.Fatalf("Error on cursor %s", err)
-		}
-		fmt.Printf("aggregate %#v\n %#v\n %#v\n",aggregate.ID, aggregate.Version, aggregate.Events)
-	}
+	c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&aggregate)
+
+	fmt.Printf("aggregate %#v\n %#v\n %#v\n",aggregate.ID, aggregate.Version, aggregate.Events)
+
 
 	/*if err = decode(jevents, eventsDB); err != nil {
 		return events, err
@@ -189,7 +181,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	*/
 
 	events = make([]triper.Event, aggregate.Version)
-	err = decode(aggregate.Events, &events)
+	err := decode(aggregate.Events, &events)
 	if err != nil {
 		return nil, err
 	}
