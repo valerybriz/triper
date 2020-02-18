@@ -124,7 +124,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		if id == aggregateID {
 			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		} else{
-			_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
+			_, err = c.connector.Query("INSERT INTO events (_id) VALUES($1)", aggregateID)
 			if err != nil {
 				log.Fatalf("Error inserting initial event %s", err)
 				return err
