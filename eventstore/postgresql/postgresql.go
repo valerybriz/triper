@@ -118,7 +118,10 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return err
 	}*/
 
-	c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
+	err = c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
+	if err != nil {
+		return err
+	}
 	if version == 0 {
 		log.Println("Version is 0")
 		if id == aggregateID {
@@ -162,7 +165,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
 		events   []triper.Event
 		//eventsDB []EventDB
-		//id string
+		id string
 		//version int
 		//jevents driver.Value
 		aggregate AggregateDB
@@ -170,15 +173,17 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
 	//var aggregate AggregateDB
 
-	c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&aggregate)
-
+	err := c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("aggregate %#v\n %#v\n %#v\n",aggregate.ID, aggregate.Version, aggregate.Events)
 
 
 	/*if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
-	*/
+
 
 	events = make([]triper.Event, aggregate.Version)
 	err := decode(aggregate.Events, &events)
@@ -208,7 +213,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			Data:          dbEvent.Data,
 		}
 	}
-
+	*/
 	return events, nil
 }
 
