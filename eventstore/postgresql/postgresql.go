@@ -236,12 +236,14 @@ func encode(value interface{}) (driver.Value, error) {
 
 func decode(rawData driver.Value, value interface{}) error {
 	if rawData != nil {
-		b, ok := value.([]byte)
+		b, ok := rawData.([]byte)
 		if !ok {
 			return errors.New("type assertion to []byte failed")
 		}
 
-		return json.Unmarshal(b, &rawData)
+		json.Unmarshal(b, &value)
+
+		return nil
 
 	}
 
