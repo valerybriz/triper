@@ -119,10 +119,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	}*/
 
 	err = c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
-	if err != nil {
-		return err
-	}
-	if version == 0 {
+	if version == 0 && err != nil{
 		log.Println("Version is 0")
 		if id == aggregateID {
 			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
@@ -136,6 +133,10 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 
 	} else {
 		log.Println("Version is not 0")
+		if err != nil {
+			log.Fatalln("Error the query should find an initial event")
+			return err
+		}
 
 		if aggregate.Version != version {
 			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
