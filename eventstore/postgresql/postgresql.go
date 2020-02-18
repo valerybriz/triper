@@ -169,25 +169,26 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		id string
 		//version int
 		//jevents driver.Value
-		aggregate AggregateDB
+		//aggregate AggregateDB
 	)
 
 	//var aggregate AggregateDB
 
 	err := c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
 	if err != nil {
+		log.Fatalln("error couldnt find the aggregate id")
 		return nil, err
 	}
-	fmt.Printf("aggregate %#v\n %#v\n %#v\n",aggregate.ID, aggregate.Version, aggregate.Events)
+	fmt.Printf("aggregate %#v\n ",id)
 
 
 	/*if err = decode(jevents, eventsDB); err != nil {
 		return events, err
 	}
-
+	
 
 	events = make([]triper.Event, aggregate.Version)
-	err := decode(aggregate.Events, &events)
+	err = decode(aggregate.Events, &events)
 	if err != nil {
 		return nil, err
 	}
