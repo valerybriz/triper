@@ -66,6 +66,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	if len(events) == 0 {
 		return nil
 	}
+	var id string
 
 	err := c.connector.Ping()
 	if err != nil {
@@ -117,12 +118,11 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return err
 	}*/
 
-	_, err = c.connector.Query("SELECT * FROM events WHERE _id = $1", aggregateID)
+	c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
 	if version == 0 {
 		log.Println("Version is 0")
-		if err == nil {
-			//return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
-			log.Printf("already exists? %s", err)
+		if id == aggregateID {
+			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		} else{
 			_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
 			if err != nil {
@@ -135,9 +135,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		log.Println("Version is not 0")
 
 		if aggregate.Version != version {
-			log.Println("version is not the same")
-
-			//return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
+			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
 		_, err = c.connector.Query("INSERT INTO events (attrs) VALUES($1)", aggregate)
