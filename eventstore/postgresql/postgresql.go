@@ -169,7 +169,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		version int
 		jevents json.RawMessage
 		resultData interface{}
-		events []triper.Event
+		//events []triper.Event
 	)
 
 	//var aggregate AggregateDB
@@ -188,7 +188,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
    */
 
-	//events :=  make([]triper.Event, version)
+	events :=  make([]triper.Event, version)
 	//eventsDB := make([]EventDB, version)
 	err = decodeRaw(jevents, &eventsDB)
 	if err != nil {
