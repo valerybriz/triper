@@ -164,41 +164,25 @@ func (c *Client) Save(events []triper.Event, version int) error {
 // Load the stored events for an AggregateID
 func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
+		events   []triper.Event
 		eventsDB []EventDB
 		id string
 		version int
-		jevents json.RawMessage
-		//resultData interface{}
-		//events []triper.Event
+		jEvents json.RawMessage
 	)
 
-	//var aggregate AggregateDB
-
-	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jevents)
+	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
 	if err != nil {
 		log.Fatalln("error couldn't find the aggregate id")
 		return nil, err
 	}
 
-
-
-	/*if err = decode(jevents, eventsDB); err != nil {
-		return events, err
-	}
-
-   */
-
-	events :=  make([]triper.Event, version)
-	//eventsDB := make([]EventDB, version)
-	err = decodeRaw(jevents, &eventsDB)
+	events =  make([]triper.Event, version)
+	err = decode(jEvents, &eventsDB)
 	if err != nil {
 		log.Fatalf("error on decoding %s", err)
 		return nil, err
 	}
-
-	//fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
-	//eventsDB = append(eventsDB, event)
-	log.Println("first decode ok")
 
 	for i, dbEvent := range eventsDB {
 		dataType, err := c.reg.Get(dbEvent.Type)
@@ -206,16 +190,9 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			return events, err
 		}
 		if dbEvent.RawData != nil{
-			if err = decodeRaw(dbEvent.RawData, &dataType); err != nil {
-				dataType = nil
-				log.Printf("error on decoding events %s", err)
-				//return events, err
-			} else{
-				fmt.Printf("resulted data %#v  ", dataType)
+			if err = decode(dbEvent.RawData, &dataType); err != nil {
+				return events, err
 			}
-
-		} else{
-			dataType = nil
 		}
 
 		// Translate dbEvent to triper.Event
@@ -246,24 +223,16 @@ func encode(value interface{}) (json.RawMessage, error) {
 	return nil, errors.New("encode error null value found")
 }
 
-func decode(rawData json.RawMessage, value *[]EventDB) error {
-	if rawData != nil {
-		return json.Unmarshal(rawData, &value)
-	}
-	return errors.New("decode error, null value found")
-}
-func decodeRaw(rawData json.RawMessage, value interface{}) error {
+func decode(rawData json.RawMessage, value interface{}) error {
 	if rawData != nil {
 		err := json.Unmarshal(rawData, &value)
 		if err != nil {
 			log.Printf("error unmarshaling %s", err)
-			//return errors.New("scan could not unmarshal to interface{}")
+			return errors.New("scan could not unmarshal to interface{}")
 		}
 
 	} else{
-		log.Println("the data is null")
+		return errors.New("decode error, null value found")
 	}
-
-	//return errors.New("decode error, null value found")
 	return nil
 }
