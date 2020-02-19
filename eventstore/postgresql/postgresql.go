@@ -205,8 +205,8 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		//	return events, err
 		//}
 
-
-		if err = decodeRaw(dbEvent.RawData, &resultData); err != nil {
+		byteRawData := []byte(dbEvent.RawData)
+		if err = decodeRaw(byteRawData, &resultData); err != nil {
 			log.Fatalf("error on decoding events %s", err)
 			//return events, err
 		}
