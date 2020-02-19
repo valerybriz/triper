@@ -164,7 +164,7 @@ func (c *Client) Save(events []triper.Event, version int) error {
 // Load the stored events for an AggregateID
 func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
-		//eventsDB []EventDB
+		eventsDB []EventDB
 		id string
 		version int
 		jevents json.RawMessage
@@ -187,7 +187,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
    */
 
 	events :=  make([]triper.Event, version)
-	eventsDB := make([]EventDB, version)
+	//eventsDB := make([]EventDB, version)
 	err = decodeRaw(jevents, &eventsDB)
 	if err != nil {
 		log.Fatalln("error on decoding")
