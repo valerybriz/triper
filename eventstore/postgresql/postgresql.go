@@ -256,5 +256,6 @@ func decodeRaw(rawData json.RawMessage, value interface{}) error {
 		}
 
 	}
+	log.Printf("rawdata %s", rawData)
 	return errors.New("decode error, null value found")
 }
