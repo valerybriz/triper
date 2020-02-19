@@ -139,7 +139,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		}
 
 		if aggregate.Version != version {
-			return fmt.Errorf("badger: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
+			return fmt.Errorf("postgres: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
 		_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
@@ -219,6 +219,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			Type:          dbEvent.Type,
 			Data:          dbEvent.RawData,
 		}
+		fmt.Printf("event version %#v\n ", dbEvent.Version)
 	}
 
 	return events, nil
