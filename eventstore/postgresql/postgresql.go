@@ -248,14 +248,15 @@ func decode(rawData json.RawMessage, value *[]EventDB) error {
 	return errors.New("decode error, null value found")
 }
 func decodeRaw(rawData json.RawMessage, value interface{}) error {
-	if rawData != nil {
+	//if rawData != nil {
 		err := json.Unmarshal(rawData, &value)
 		if err != nil {
 			log.Printf("error unmarshaling %s", err)
 			//return errors.New("scan could not unmarshal to interface{}")
 		}
 
-	}
+	//}
 	log.Printf("rawdata %s", rawData)
-	return errors.New("decode error, null value found")
+	//return errors.New("decode error, null value found")
+	return nil
 }
