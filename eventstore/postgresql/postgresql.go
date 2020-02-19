@@ -168,6 +168,8 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		id string
 		version int
 		jevents json.RawMessage
+		resultData interface{}
+		events []triper.Event
 	)
 
 	//var aggregate AggregateDB
@@ -186,18 +188,17 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
    */
 
-	events :=  make([]triper.Event, version)
+	//events :=  make([]triper.Event, version)
 	//eventsDB := make([]EventDB, version)
 	err = decodeRaw(jevents, &eventsDB)
 	if err != nil {
-		log.Fatalln("error on decoding")
+		log.Fatalf("error on decoding %s", err)
 		return nil, err
 	}
 
 	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
 	//eventsDB = append(eventsDB, event)
 
-	var resultData interface{}
 	for i, dbEvent := range eventsDB {
 		//dataType, err := c.reg.Get(dbEvent.Type)
 		//if err != nil {
@@ -206,7 +207,8 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
 
 		if err = decodeRaw(dbEvent.RawData, &resultData); err != nil {
-			return events, err
+			log.Fatalf("error on decoding events %s", err)
+			//return events, err
 		}
 
 
@@ -249,7 +251,8 @@ func decodeRaw(rawData json.RawMessage, value interface{}) error {
 	if rawData != nil {
 		err := json.Unmarshal(rawData, &value)
 		if err != nil {
-			return errors.New("scan could not unmarshal to interface{}")
+			log.Printf("error unmarshaling %s", err)
+			//return errors.New("scan could not unmarshal to interface{}")
 		}
 
 	}
