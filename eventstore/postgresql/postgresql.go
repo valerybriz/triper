@@ -197,16 +197,17 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
 	//eventsDB = append(eventsDB, event)
 
-
+	var resultData interface{}
 	for i, dbEvent := range eventsDB {
 		//dataType, err := c.reg.Get(dbEvent.Type)
 		//if err != nil {
 		//	return events, err
 		//}
 
-		//if err = decode(dbEvent.RawData, dataType); err != nil {
-		//	return events, err
-		//}
+
+		if err = decodeRaw(dbEvent.RawData, &resultData); err != nil {
+			return events, err
+		}
 
 
 
@@ -217,9 +218,9 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			CommandID:     dbEvent.CommandID,
 			Version:       dbEvent.Version,
 			Type:          dbEvent.Type,
-			Data:          dbEvent.RawData,
+			Data:          resultData,
 		}
-		fmt.Printf("event version %#v\n ", dbEvent.Version)
+		fmt.Printf("event version %#v , %#v\n ", dbEvent.Version, resultData)
 	}
 
 	return events, nil
@@ -241,6 +242,17 @@ func encode(value interface{}) (driver.Value, error) {
 func decode(rawData json.RawMessage, value *[]EventDB) error {
 	if rawData != nil {
 		return json.Unmarshal(rawData, &value)
+	}
+	return errors.New("decode error, null value found")
+}
+func decodeRaw(rawData driver.Value, value *interface{}) error {
+	if rawData != nil {
+		b, ok := rawData.([]byte)
+		if !ok {
+			return errors.New("type assertion to []byte failed")
+		}
+
+		return json.Unmarshal(b, &value)
 	}
 	return errors.New("decode error, null value found")
 }
