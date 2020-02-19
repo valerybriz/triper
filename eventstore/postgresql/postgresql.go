@@ -188,7 +188,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
 	events :=  make([]triper.Event, version)
 	eventsDB := make([]EventDB, version)
-	err = decode(jevents, &eventsDB)
+	err = decodeRaw(jevents, &eventsDB)
 	if err != nil {
 		log.Fatalln("error on decoding")
 		return nil, err
@@ -245,12 +245,8 @@ func decode(rawData json.RawMessage, value *[]EventDB) error {
 	}
 	return errors.New("decode error, null value found")
 }
-func decodeRaw(rawData json.RawMessage, value *interface{}) error {
+func decodeRaw(rawData json.RawMessage, value interface{}) error {
 	if rawData != nil {
-		/*asBytes, ok := rawData.([]byte)
-		if !ok {
-			return errors.New("scan source was not []bytes")
-		}*/
 		err := json.Unmarshal(rawData, &value)
 		if err != nil {
 			return errors.New("scan could not unmarshal to interface{}")
