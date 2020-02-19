@@ -168,7 +168,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		id string
 		version int
 		jevents json.RawMessage
-		resultData interface{}
+		//resultData interface{}
 		//events []triper.Event
 	)
 
@@ -201,25 +201,22 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	log.Println("first decode ok")
 
 	for i, dbEvent := range eventsDB {
-		//dataType, err := c.reg.Get(dbEvent.Type)
-		//if err != nil {
-		//	return events, err
-		//}
+		dataType, err := c.reg.Get(dbEvent.Type)
+		if err != nil {
+			return events, err
+		}
 		if dbEvent.RawData != nil{
-			if err = decodeRaw(dbEvent.RawData, &resultData); err != nil {
-				resultData = nil
+			if err = decodeRaw(dbEvent.RawData, &dataType); err != nil {
+				dataType = nil
 				log.Printf("error on decoding events %s", err)
 				//return events, err
 			} else{
-				fmt.Printf("resulted data %#v  ", resultData)
+				fmt.Printf("resulted data %#v  ", dataType)
 			}
 
 		} else{
-			resultData = nil
+			dataType = nil
 		}
-
-
-
 
 		// Translate dbEvent to triper.Event
 		events[i] = triper.Event{
@@ -228,7 +225,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			CommandID:     dbEvent.CommandID,
 			Version:       dbEvent.Version,
 			Type:          dbEvent.Type,
-			Data:          resultData,
+			Data:          dataType,
 		}
 		fmt.Printf("event version %#v ", dbEvent.Version)
 	}
