@@ -196,8 +196,9 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return nil, err
 	}
 
-	fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
+	//fmt.Printf("aggregate %#v\n %#v\n  %#v\n ",id, version, eventsDB)
 	//eventsDB = append(eventsDB, event)
+	log.Println("first decode ok")
 
 	for i, dbEvent := range eventsDB {
 		//dataType, err := c.reg.Get(dbEvent.Type)
@@ -205,8 +206,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		//	return events, err
 		//}
 
-		byteRawData := []byte(dbEvent.RawData)
-		if err = decodeRaw(byteRawData, &resultData); err != nil {
+		if err = decodeRaw(dbEvent.RawData, &resultData); err != nil {
 			log.Fatalf("error on decoding events %s", err)
 			//return events, err
 		}
@@ -248,15 +248,17 @@ func decode(rawData json.RawMessage, value *[]EventDB) error {
 	return errors.New("decode error, null value found")
 }
 func decodeRaw(rawData json.RawMessage, value interface{}) error {
-	//if rawData != nil {
+	if rawData != nil {
 		err := json.Unmarshal(rawData, &value)
 		if err != nil {
 			log.Printf("error unmarshaling %s", err)
 			//return errors.New("scan could not unmarshal to interface{}")
 		}
 
-	//}
-	log.Printf("rawdata %s", rawData)
+	} else{
+		log.Println("the data is null")
+	}
+
 	//return errors.New("decode error, null value found")
 	return nil
 }
