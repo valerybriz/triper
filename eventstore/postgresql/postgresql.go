@@ -205,11 +205,19 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		//if err != nil {
 		//	return events, err
 		//}
+		if dbEvent.RawData != nil{
+			if err = decodeRaw(dbEvent.RawData, &resultData); err != nil {
+				resultData = nil
+				log.Printf("error on decoding events %s", err)
+				//return events, err
+			} else{
+				fmt.Printf("resulted data %#v  ", resultData)
+			}
 
-		if err = decodeRaw(dbEvent.RawData, &resultData); err != nil {
-			log.Fatalf("error on decoding events %s", err)
-			//return events, err
+		} else{
+			resultData = nil
 		}
+
 
 
 
@@ -222,7 +230,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			Type:          dbEvent.Type,
 			Data:          resultData,
 		}
-		fmt.Printf("event version %#v , %#v\n ", dbEvent.Version, resultData)
+		fmt.Printf("event version %#v ", dbEvent.Version)
 	}
 
 	return events, nil
