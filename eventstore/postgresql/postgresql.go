@@ -27,7 +27,7 @@ type EventDB struct {
 	AggregateID   string `json:"aggregate_id"`
 	AggregateType string `json:"aggregate_type"`
 	CommandID     string `json:"command_id"`
-	RawData       driver.Value `json:"raw_data"`
+	RawData       json.RawMessage `json:"raw_data"`
 	Timestamp     time.Time `json:"timestamp"`
 	Version       int `json:"version"`
 }
@@ -226,7 +226,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	return events, nil
 }
 
-func encode(value interface{}) (driver.Value, error) {
+func encode(value interface{}) (json.RawMessage, error) {
 	// Marshal event data if there is any.
 	if value != nil {
 		rawData, err := json.Marshal(value)
@@ -245,13 +245,13 @@ func decode(rawData json.RawMessage, value *[]EventDB) error {
 	}
 	return errors.New("decode error, null value found")
 }
-func decodeRaw(rawData interface{}, value *interface{}) error {
+func decodeRaw(rawData json.RawMessage, value *interface{}) error {
 	if rawData != nil {
-		asBytes, ok := rawData.([]byte)
+		/*asBytes, ok := rawData.([]byte)
 		if !ok {
 			return errors.New("scan source was not []bytes")
-		}
-		err := json.Unmarshal(asBytes, &value)
+		}*/
+		err := json.Unmarshal(rawData, &value)
 		if err != nil {
 			return errors.New("scan could not unmarshal to interface{}")
 		}
