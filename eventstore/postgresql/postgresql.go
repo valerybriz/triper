@@ -245,14 +245,17 @@ func decode(rawData json.RawMessage, value *[]EventDB) error {
 	}
 	return errors.New("decode error, null value found")
 }
-func decodeRaw(rawData driver.Value, value *interface{}) error {
+func decodeRaw(rawData interface{}, value *interface{}) error {
 	if rawData != nil {
-		b, ok := rawData.([]byte)
+		asBytes, ok := rawData.([]byte)
 		if !ok {
-			return errors.New("type assertion to []byte failed")
+			return errors.New("scan source was not []bytes")
+		}
+		err := json.Unmarshal(asBytes, &value)
+		if err != nil {
+			return errors.New("scan could not unmarshal to interface{}")
 		}
 
-		return json.Unmarshal(b, &value)
 	}
 	return errors.New("decode error, null value found")
 }
