@@ -129,15 +129,13 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 
 	} else {
 		log.Println("Version is not 0")
-		err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
+		err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &recordVersion, &jEvents)
 		if err != nil {
 			log.Printf("error couldn't find the aggregate id %s", err)
 			return err
 		}
 
-		if aggregate.Version != version {
-			return fmt.Errorf("postgres: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
-		}
+		fmt.Errorf("postgres: version %d, got: %d got2: %d", recordVersion, version, aggregate.Version)
 
 		err = decode(jEvents, &eventsDB) // Get the previous events so it can be stored together
 		if err != nil {
@@ -152,6 +150,10 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return err
 		}
 		aggregate.Events = blob
+
+		if aggregate.Version != version {
+			return fmt.Errorf("postgres: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
+		}
 
 		//_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
 		_, err = c.connector.Query("UPDATE events SET version = $2, events = $3 WHERE _id = $1", aggregate.ID, aggregate.Version, aggregate.Events)
