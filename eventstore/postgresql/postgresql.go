@@ -151,9 +151,9 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		}
 		aggregate.Events = blob
 
-		if aggregate.Version != version {
+		/*if aggregate.Version != version {
 			return fmt.Errorf("postgres: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
-		}
+		}*/
 
 		//_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
 		_, err = c.connector.Query("UPDATE events SET version = $2, events = $3 WHERE _id = $1", aggregate.ID, aggregate.Version, aggregate.Events)
