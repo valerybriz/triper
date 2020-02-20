@@ -89,6 +89,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			AggregateID:   event.AggregateID,
 			AggregateType: event.AggregateType,
 			CommandID:     event.CommandID,
+			Timestamp:     time.Now(),
 			RawData:       raw,
 			Version:       1 + version + i,
 		}
@@ -102,7 +103,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	// Now that events are saved, aggregate version needs to be updated
 	aggregate := AggregateDB{
 		ID:      aggregateID,
-		Version: version + len(eventsDB),
+		Version: len(eventsDB),
 		Events: blob,
 	}
 
@@ -130,7 +131,8 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return fmt.Errorf("postgres: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
 
-		_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
+		//_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
+		_, err = c.connector.Query("UPDATE events SET version = $2, events = $3 WHERE _id = $1", aggregate.ID, aggregate.Version, aggregate.Events)
 		if err != nil {
 			return err
 		}
