@@ -183,9 +183,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return nil, err
 	}
 
-	fmt.Printf("load the size would be %#v\n ", len(eventsDB))
 	events =  make([]triper.Event, len(eventsDB))
-
 	for i, dbEvent := range eventsDB {
 		dataType, err := c.reg.Get(dbEvent.Type)
 		if err != nil {
@@ -206,7 +204,6 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			Type:          dbEvent.Type,
 			Data:          dataType,
 		}
-		fmt.Printf("event version %#v\n ", dbEvent.Version)
 	}
 
 	return events, nil
