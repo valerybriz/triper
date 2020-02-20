@@ -66,7 +66,12 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	if len(events) == 0 {
 		return nil
 	}
-	var id string
+	var (
+		eventsDB []EventDB
+		id string
+		recordVersion int
+		jEvents json.RawMessage
+	)
 
 	err := c.connector.Ping()
 	if err != nil {
@@ -74,7 +79,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	}
 
 	fmt.Printf("save the size would be %#v\n ", len(events))
-	eventsDB := make([]EventDB, len(events))
+	newEventsDB := make([]EventDB, len(events))
 	aggregateID := events[0].AggregateID
 
 	for i, event := range events {
@@ -83,7 +88,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return err
 		}
 
-		eventsDB[i] = EventDB{
+		newEventsDB[i] = EventDB{
 			ID:            event.ID,
 			Type:          event.Type,
 			AggregateID:   event.AggregateID,
@@ -95,41 +100,58 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		}
 	}
 
-	blob, err := encode(eventsDB)
-	if err != nil {
-		return err
-	}
-
 	// Now that events are saved, aggregate version needs to be updated
 	aggregate := AggregateDB{
 		ID:      aggregateID,
-		Version: len(eventsDB),
-		Events: blob,
+		Version: len(newEventsDB),
+		Events: nil,
 	}
 
-	err = c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
-	if version == 0 && err != nil{
+	if version == 0 {
 		log.Println("Version is 0")
-		if id == aggregateID {
-			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
-		} else{
-			_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events )
+		err = c.connector.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
+		if err != nil { // If it trows an error there are no previous records with the same id
+
+			blob, err := encode(newEventsDB)
+			if err != nil {
+				return err
+			}
+			aggregate.Events = blob
+
+			_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
 			if err != nil {
 				log.Fatalf("Error inserting initial event %s", err)
 				return err
 			}
+		} else{
+			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		}
 
 	} else {
 		log.Println("Version is not 0")
+		err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
 		if err != nil {
-			log.Fatalf("Error the query should find an initial event %s", err)
+			log.Printf("error couldn't find the aggregate id %s", err)
 			return err
 		}
 
 		if aggregate.Version != version {
 			return fmt.Errorf("postgres: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
 		}
+
+		err = decode(jEvents, &eventsDB) // Get the previous events so it can be stored together
+		if err != nil {
+			log.Fatalf("error decoding the previous events %s", err)
+			return err
+		}
+
+		eventsDB = append(newEventsDB, eventsDB...)
+		aggregate.Version = len(eventsDB)
+		blob, err := encode(eventsDB)
+		if err != nil {
+			return err
+		}
+		aggregate.Events = blob
 
 		//_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
 		_, err = c.connector.Query("UPDATE events SET version = $2, events = $3 WHERE _id = $1", aggregate.ID, aggregate.Version, aggregate.Events)
