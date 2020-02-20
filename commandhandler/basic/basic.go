@@ -43,8 +43,8 @@ func (h *Handler) Handle(command triper.Command) (err error) {
 	}()
 
 	if version != 0 {
-		fmt.Printf("aggregate versions %#v - %#v\n", version, aggregate.GetVersion())
 		if err = h.repository.Load(aggregate, command.GetAggregateID()); err != nil {
+			fmt.Printf("aggregate versions %#v - %#v\n", version, aggregate.GetVersion())
 			return triper.NewFailure(err, triper.FailureLoadingEvents, command)
 		}
 

@@ -91,14 +91,6 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			RawData:       raw,
 			Version:       1 + version + i,
 		}
-
-
-
-		// the id contains the aggregateID as prefix
-		// aggregateID.eventID
-		//id := fmt.Sprintf("%s.%s", aggregateID, event.ID)
-		log.Printf("id %s", event.AggregateID)
-
 	}
 
 	blob, err := encode(eventsDB)
@@ -113,13 +105,9 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		Events: blob,
 	}
 
-	/*aggregateBlob, err := encode(aggregate)
-	if err != nil {
-		return err
-	}*/
-
 	err = c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
-	if version == 0 && err != nil{
+	//if version == 0 && err != nil{
+	if version == 0 {
 		log.Println("Version is 0")
 		if id == aggregateID {
 			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
@@ -170,15 +158,15 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		version int
 		jEvents json.RawMessage
 	)
+	events =  make([]triper.Event, version)
 
 	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
 	 if err != nil {
-		log.Printf("error couldn't find the aggregate id %s", err)
+		log.Fatalf("error couldn't find the aggregate id %s", err)
 		return events, nil
 
 	}
 
-	events =  make([]triper.Event, version)
 	err = decode(jEvents, &eventsDB)
 	if err != nil {
 		log.Fatalf("error on decoding %s", err)
