@@ -73,6 +73,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		panic(err)
 	}
 
+	fmt.Printf("save the size would be %#v\n ", len(events))
 	eventsDB := make([]EventDB, len(events))
 	aggregateID := events[0].AggregateID
 
@@ -164,13 +165,15 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return events, nil
 	}
 
-	fmt.Printf("the size would be %#v\n ", version)
-	events =  make([]triper.Event, version)
+
 	err = decode(jEvents, &eventsDB)
 	if err != nil {
 		log.Fatalf("error on decoding %s", err)
 		return nil, err
 	}
+
+	fmt.Printf("load the size would be %#v\n ", len(eventsDB))
+	events =  make([]triper.Event, len(eventsDB))
 
 	for i, dbEvent := range eventsDB {
 		dataType, err := c.reg.Get(dbEvent.Type)
