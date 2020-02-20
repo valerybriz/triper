@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
-	"log"
 	"reflect"
 
 	"github.com/valerybriz/triper"
@@ -39,8 +38,7 @@ func (h *Handler) Handle(command triper.Command) (err error) {
 	defer func() {
 		if err != nil {
 			glog.Errorln(err)
-			err = h.repository.PublishError(err, command, h.bucket, "errors")
-			log.Fatalf("error un publishing %s", err)
+			h.repository.PublishError(err, command, h.bucket, "errors")
 		}
 	}()
 
