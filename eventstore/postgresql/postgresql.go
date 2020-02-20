@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -78,7 +77,6 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		panic(err)
 	}
 
-	fmt.Printf("save the size would be %#v\n ", len(events))
 	newEventsDB := make([]EventDB, len(events))
 	aggregateID := events[0].AggregateID
 
@@ -108,7 +106,6 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	}
 
 	if version == 0 {
-		log.Println("Version is 0")
 		err = c.connector.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
 		if err != nil { // If it trows an error there are no previous records with the same id
 
@@ -120,7 +117,6 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 
 			_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
 			if err != nil {
-				log.Fatalf("Error inserting initial event %s", err)
 				return err
 			}
 		} else{
@@ -128,18 +124,14 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		}
 
 	} else {
-		log.Println("Version is not 0")
+
 		err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &recordVersion, &jEvents)
 		if err != nil {
-			log.Printf("error couldn't find the aggregate id %s", err)
 			return err
 		}
 
-		log.Printf("postgres: version %d, got: %d got2: %d", recordVersion, version, aggregate.Version)
-
 		err = decode(jEvents, &eventsDB) // Get the previous events so it can be stored together
 		if err != nil {
-			log.Fatalf("error decoding the previous events %s", err)
 			return err
 		}
 
@@ -150,11 +142,6 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return err
 		}
 		aggregate.Events = blob
-
-		/*if aggregate.Version != version {
-			return fmt.Errorf("postgres: %s, aggregate version missmatch, wanted: %d, got: %d", aggregate.ID, version, aggregate.Version)
-		}*/
-
 		//_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
 		_, err = c.connector.Query("UPDATE events SET version = $2, events = $3 WHERE _id = $1", aggregate.ID, aggregate.Version, aggregate.Events)
 		if err != nil {
@@ -187,14 +174,12 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
 	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
 	if err != nil {
-		log.Printf("error couldn't find the aggregate id %s", err)
 		return events, nil
 	}
 
 
 	err = decode(jEvents, &eventsDB)
 	if err != nil {
-		log.Fatalf("error on decoding %s", err)
 		return nil, err
 	}
 
@@ -244,7 +229,6 @@ func decode(rawData json.RawMessage, value interface{}) error {
 	if rawData != nil {
 		err := json.Unmarshal(rawData, &value)
 		if err != nil {
-			log.Printf("error unmarshaling %s", err)
 			return errors.New("scan could not unmarshal to interface{}")
 		}
 
