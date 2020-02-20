@@ -157,7 +157,6 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		version int
 		jEvents json.RawMessage
 	)
-	events =  make([]triper.Event, version)
 
 	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
 	 if err != nil {
@@ -166,6 +165,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 
 	}
 
+	events =  make([]triper.Event, version)
 	err = decode(jEvents, &eventsDB)
 	if err != nil {
 		log.Fatalf("error on decoding %s", err)
