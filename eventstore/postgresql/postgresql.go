@@ -135,7 +135,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return err
 		}
 
-		fmt.Errorf("postgres: version %d, got: %d got2: %d", recordVersion, version, aggregate.Version)
+		log.Printf("postgres: version %d, got: %d got2: %d", recordVersion, version, aggregate.Version)
 
 		err = decode(jEvents, &eventsDB) // Get the previous events so it can be stored together
 		if err != nil {
