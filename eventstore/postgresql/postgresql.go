@@ -164,6 +164,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return events, nil
 	}
 
+	fmt.Printf("the size would be %#v\n ", version)
 	events =  make([]triper.Event, version)
 	err = decode(jEvents, &eventsDB)
 	if err != nil {
@@ -191,7 +192,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 			Type:          dbEvent.Type,
 			Data:          dataType,
 		}
-		fmt.Printf("event version %#v ", dbEvent.Version)
+		fmt.Printf("event version %#v\n ", dbEvent.Version)
 	}
 
 	return events, nil
