@@ -172,9 +172,10 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	)
 
 	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
-	if err != nil {
-		log.Fatalln("error couldn't find the aggregate id")
-		return nil, err
+	 if err != nil {
+		log.Printf("error couldn't find the aggregate id %s", err)
+		return events, nil
+
 	}
 
 	events =  make([]triper.Event, version)
