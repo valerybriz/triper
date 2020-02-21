@@ -110,7 +110,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return err
 		}
 	}
-	query := `INSERT INTO eventsDetails (_id, version, type, aggregate_id, aggregate_type, command_id, timestamp, raw_data) 
+	query := `INSERT INTO eventdetails (_id, version, type, aggregate_id, aggregate_type, command_id, timestamp, raw_data) 
 			  VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
 	for i, event := range events {
 		// Encode the specific data of the event
