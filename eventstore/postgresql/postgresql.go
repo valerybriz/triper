@@ -78,20 +78,21 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		Events: nil,
 	}
 
-	tx, err := c.connector.Begin()
+	/*tx, err := c.connector.Begin()
 	if err != nil {
 		return err
 	}
+	*/
 	//defer c.connector.Close()
 
-	err = tx.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
+	err := c.connector.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
 
 	if version == 0 {
 		// If it trows an error there are no previous records with the same id
 		if err != nil {
-			_, err = tx.Exec("INSERT INTO events (_id, version) VALUES($1, $2)", aggregate.ID, aggregate.Version)
+			_, err = c.connector.Exec("INSERT INTO events (_id, version) VALUES($1, $2)", aggregate.ID, aggregate.Version)
 			if err != nil {
-				tx.Rollback()
+				//tx.Rollback()
 				return err
 			}
 		} else{
@@ -103,9 +104,9 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return err
 		}
 		aggregate.Version = version + len(events)
-		_, err = tx.Exec("UPDATE events SET version = $1 WHERE _id = $2", aggregate.Version, aggregate.ID)
+		_, err = c.connector.Exec("UPDATE events SET version = $1 WHERE _id = $2", aggregate.Version, aggregate.ID)
 		if err != nil {
-			tx.Rollback()
+			//tx.Rollback()
 			return err
 		}
 	}
@@ -118,19 +119,19 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec(query, event.ID, currentVersion, event.Type, aggregate.ID,
+		_, err = c.connector.Exec(query, event.ID, currentVersion, event.Type, aggregate.ID,
 			event.AggregateType, event.CommandID, time.Now(), raw)
 		if err != nil {
-			tx.Rollback()
+			//tx.Rollback()
 			return err
 		}
 
 	}
 
-	err = tx.Commit()
+	/*err = tx.Commit()
 	if err != nil {
 		return err
-	}
+	}*/
 
 	return nil
 }
