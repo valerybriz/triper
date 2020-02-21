@@ -112,7 +112,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	}
 
 	query := `INSERT INTO eventdetails (_id, version, type, aggregate_id, aggregate_type, command_id, timestamp, raw_data) 
-			  VALUES(?, ?, ?, ?, ?, ?, ?, ?)`
+			  VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
 	stmt, err := c.connector.Prepare(query)
 	if err != nil {
 		//tx.Rollback()
