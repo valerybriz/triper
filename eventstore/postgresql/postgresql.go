@@ -13,8 +13,8 @@ import (
 
 // AggregateDB defines version and id of an aggregate
 type AggregateDB struct {
-	ID      string       `json:"_id"`
-	Version int          `json:"version"`
+	ID      string `json:"_id"`
+	Version int    `json:"version"`
 }
 
 // EventDB defines the structure of the events to be stored
