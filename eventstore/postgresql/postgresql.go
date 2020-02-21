@@ -166,7 +166,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	}
 	//defer c.connector.Close()
 
-	err = tx.QueryRow("SELECT version FROM events WHERE aggregate_id = $1", aggregateID).Scan(&version)
+	err = tx.QueryRow("SELECT version FROM events WHERE _id = $1", aggregateID).Scan(&version)
 	if err != nil {
 		return nil, err
 	}
