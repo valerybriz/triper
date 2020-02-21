@@ -2,7 +2,6 @@ package postgresql
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,13 +15,12 @@ import (
 type AggregateDB struct {
 	ID      string       `json:"_id"`
 	Version int          `json:"version"`
-	Events  driver.Value `json:"events"`
 }
 
 // EventDB defines the structure of the events to be stored
 type EventDB struct {
 	ID            string          `json:"_id"`
-	Type          string          `json:"type"`
+	Type          string          `json:"event_type"`
 	AggregateID   string          `json:"aggregate_id"`
 	AggregateType string          `json:"aggregate_type"`
 	CommandID     string          `json:"command_id"`
@@ -73,7 +71,6 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	aggregate := AggregateDB{
 		ID:      aggregateID,
 		Version: version + 1,
-		Events:  nil,
 	}
 
 	tx, err := c.connector.Begin()
