@@ -66,57 +66,32 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return nil
 	}
 	var (
-		eventsDB []EventDB
 		id string
-		recordVersion int
-		jEvents json.RawMessage
+		currentVersion int
 	)
 
-	err := c.connector.Ping()
-	if err != nil {
-		panic(err)
-	}
-
-	newEventsDB := make([]EventDB, len(events))
-	aggregateID := events[0].AggregateID
-
-	for i, event := range events {
-		raw, err := encode(event.Data)
-		if err != nil {
-			return err
-		}
-
-		newEventsDB[i] = EventDB{
-			ID:            event.ID,
-			Type:          event.Type,
-			AggregateID:   event.AggregateID,
-			AggregateType: event.AggregateType,
-			CommandID:     event.CommandID,
-			Timestamp:     time.Now(),
-			RawData:       raw,
-			Version:       1 + version + i,
-		}
-	}
-
 	// Now that events are saved, aggregate version needs to be updated
+	aggregateID := events[0].AggregateID
 	aggregate := AggregateDB{
 		ID:      aggregateID,
-		Version: len(newEventsDB),
+		Version: version + 1,
 		Events: nil,
 	}
 
+	tx, err := c.connector.Begin()
+	if err != nil {
+		return err
+	}
+	defer c.connector.Close()
+
+	err = tx.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
+
 	if version == 0 {
-		err = c.connector.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
-		if err != nil { // If it trows an error there are no previous records with the same id
-
-			blob, err := encode(newEventsDB)
+		// If it trows an error there are no previous records with the same id
+		if err != nil {
+			_, err = tx.Exec("INSERT INTO events (_id, version) VALUES($1, $2)", aggregate.ID, aggregate.Version)
 			if err != nil {
-				return err
-			}
-			aggregate.Events = blob
-
-			_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
-			if err != nil {
+				tx.Rollback()
 				return err
 			}
 		} else{
@@ -124,29 +99,37 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		}
 
 	} else {
-
-		err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &recordVersion, &jEvents)
 		if err != nil {
+			return err
+		}
+		aggregate.Version = version + len(events)
+		_, err = tx.Exec("UPDATE events SET version = $1 WHERE _id = $2", aggregate.Version, aggregate.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	query := `INSERT INTO eventsDetails (_id, version, type, aggregate_id, aggregate_type, command_id, timestamp, raw_data) 
+			  VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
+	for i, event := range events {
+		// Encode the specific data of the event
+		currentVersion = 1 + version + i
+		raw, err := encode(event.Data)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(query, event.ID, currentVersion, event.Type, aggregate.ID,
+			event.AggregateType, event.CommandID, time.Now(), raw)
+		if err != nil {
+			tx.Rollback()
 			return err
 		}
 
-		err = decode(jEvents, &eventsDB) // Get the previous events so it can be stored together
-		if err != nil {
-			return err
-		}
+	}
 
-		eventsDB = append(newEventsDB, eventsDB...)
-		aggregate.Version = len(eventsDB)
-		blob, err := encode(eventsDB)
-		if err != nil {
-			return err
-		}
-		aggregate.Events = blob
-		//_, err = c.connector.Query("INSERT INTO events (_id, version, events) VALUES($1, $2, $3)", aggregate.ID, aggregate.Version, aggregate.Events)
-		_, err = c.connector.Query("UPDATE events SET version = $2, events = $3 WHERE _id = $1", aggregate.ID, aggregate.Version, aggregate.Events)
-		if err != nil {
-			return err
-		}
+	err = tx.Commit()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -166,44 +149,66 @@ func (c *Client) Save(events []triper.Event, version int) error {
 func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
 		events   []triper.Event
-		eventsDB []EventDB
 		id string
 		version int
-		jEvents json.RawMessage
+		eventVersion int
+		commandID string
+		aggregateType string
+		eventType string
+		eventAggregateID string
+		timestamp time.Time
+		data json.RawMessage
 	)
 
-	err := c.connector.QueryRow("SELECT * FROM events WHERE _id = $1", aggregateID).Scan(&id, &version, &jEvents)
+	tx, err := c.connector.Begin()
 	if err != nil {
-		return events, nil
+		return nil, err
 	}
+	defer c.connector.Close()
 
-
-	err = decode(jEvents, &eventsDB)
+	err = tx.QueryRow("SELECT version FROM events WHERE aggregate_id = $1", aggregateID).Scan(&version)
 	if err != nil {
 		return nil, err
 	}
 
-	events =  make([]triper.Event, len(eventsDB))
-	for i, dbEvent := range eventsDB {
-		dataType, err := c.reg.Get(dbEvent.Type)
+	rows, err := tx.Query("SELECT * FROM eventsDetails WHERE aggregate_id = $1", aggregateID)
+	if err != nil {
+		return nil, err
+	}
+
+	events =  make([]triper.Event, version)
+	i := 0
+	for rows.Next() {
+		err = rows.Scan(&id, &eventVersion, &eventType, &eventAggregateID, &aggregateType, &commandID, &timestamp, &data)
 		if err != nil {
 			return events, err
 		}
-		if dbEvent.RawData != nil{
-			if err = decode(dbEvent.RawData, &dataType); err != nil {
+
+		dataType, err := c.reg.Get(eventType)
+		if err != nil {
+			return events, err
+		}
+		if data != nil{
+			if err = decode(data, &dataType); err != nil {
 				return events, err
 			}
 		}
 
-		// Translate dbEvent to triper.Event
 		events[i] = triper.Event{
-			AggregateID:   aggregateID,
-			AggregateType: dbEvent.AggregateType,
-			CommandID:     dbEvent.CommandID,
-			Version:       dbEvent.Version,
-			Type:          dbEvent.Type,
+			AggregateID:   eventAggregateID,
+			AggregateType: aggregateType,
+			CommandID:     commandID,
+			Version:       eventVersion,
+			Type:          eventType,
 			Data:          dataType,
 		}
+		i += 1
+
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return events, err
 	}
 
 	return events, nil
