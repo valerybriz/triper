@@ -146,6 +146,9 @@ func TestNewClient(t *testing.T) {
 	defaultPgInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
+	wrongPgInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		"0.0.1.0", port, user, password, dbname)
 	defaultRegister := triper.NewEventRegister()
 	defaultClient, err := NewClient(defaultPgInfo, defaultRegister)
 	if err != nil{
@@ -158,7 +161,7 @@ func TestNewClient(t *testing.T) {
 		expectedErr bool
 	}{
 		{
-			name: "algo",
+			name: "new_client_ok",
 			args: args{
 				psqlInfo: defaultPgInfo,
 				reg: defaultRegister,
@@ -167,15 +170,29 @@ func TestNewClient(t *testing.T) {
 			expectedErr: false,
 
 		},
+		{
+			name: "new_client_pginfo_wrong",
+			args: args{
+				psqlInfo: wrongPgInfo,
+				reg: nil,
+			},
+			expectedClient: defaultClient,
+			expectedErr: true,
+
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewClient(tt.args.psqlInfo, tt.args.reg)
 			if (err != nil) != tt.expectedErr {
-				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.expectedErr)
+				assert.Equal(t, assert.AnError.Error(), err )
+				//assert.EqualError(t, err, "no connection")
 				return
 			}
-			assert.Equal(t, tt.expectedClient.reg, got.reg)
+			if got != nil{
+				assert.Equal(t, tt.expectedClient.reg, got.reg)
+			}
+
 		})
 	}
 }
