@@ -44,6 +44,10 @@ func NewClient(psqlInfo string, reg triper.Register) (*Client, error) {
 	if err != nil {
 		panic(err)
 	}
+	err = connector.Ping()
+	if err != nil {
+		panic(err)
+	}
 
 	cli := &Client{
 		connector: connector,
