@@ -182,6 +182,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	events =  make([]triper.Event, version)
 	i := 0
