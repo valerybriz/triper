@@ -14,32 +14,30 @@ import (
 
 // AggregateDB defines version and id of an aggregate
 type AggregateDB struct {
-	ID      string `json:"_id"`
-	Version int `json:"version"`
-	Events driver.Value `json:"events"`
+	ID      string       `json:"_id"`
+	Version int          `json:"version"`
+	Events  driver.Value `json:"events"`
 }
 
 // EventDB defines the structure of the events to be stored
 type EventDB struct {
-	ID            string `json:"_id"`
-	Type          string `json:"type"`
-	AggregateID   string `json:"aggregate_id"`
-	AggregateType string `json:"aggregate_type"`
-	CommandID     string `json:"command_id"`
+	ID            string          `json:"_id"`
+	Type          string          `json:"type"`
+	AggregateID   string          `json:"aggregate_id"`
+	AggregateType string          `json:"aggregate_type"`
+	CommandID     string          `json:"command_id"`
 	RawData       json.RawMessage `json:"raw_data"`
-	Timestamp     time.Time `json:"timestamp"`
-	Version       int `json:"version"`
+	Timestamp     time.Time       `json:"timestamp"`
+	Version       int             `json:"version"`
 }
 
 // Client for access to badger
 type Client struct {
 	connector *sql.DB
-	reg     triper.Register
+	reg       triper.Register
 }
 
 var _ triper.EventStore = (*Client)(nil)
-
-
 
 // NewClient generates a new client for access to badger using badgerhold
 func NewClient(psqlInfo string, reg triper.Register) (*Client, error) {
@@ -51,7 +49,7 @@ func NewClient(psqlInfo string, reg triper.Register) (*Client, error) {
 
 	cli := &Client{
 		connector: connector,
-		reg:     reg,
+		reg:       reg,
 	}
 	return cli, nil
 }
@@ -66,7 +64,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		return nil
 	}
 	var (
-		id string
+		id             string
 		currentVersion int
 	)
 
@@ -75,7 +73,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	aggregate := AggregateDB{
 		ID:      aggregateID,
 		Version: version + 1,
-		Events: nil,
+		Events:  nil,
 	}
 
 	tx, err := c.connector.Begin()
@@ -93,7 +91,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 				tx.Rollback()
 				return err
 			}
-		} else{
+		} else {
 			return fmt.Errorf("postgresql: %s, aggregate already exists", aggregateID)
 		}
 
@@ -154,14 +152,14 @@ func (c *Client) Save(events []triper.Event, version int) error {
 // Load the stored events for an AggregateID
 func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
-		events   []triper.Event
-		version int
-		eventVersion int
-		commandID string
-		aggregateType string
-		eventType string
+		events           []triper.Event
+		version          int
+		eventVersion     int
+		commandID        string
+		aggregateType    string
+		eventType        string
 		eventAggregateID string
-		data json.RawMessage
+		data             json.RawMessage
 	)
 
 	tx, err := c.connector.Begin()
@@ -180,7 +178,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	}
 	defer rows.Close()
 
-	events =  make([]triper.Event, version)
+	events = make([]triper.Event, version)
 	i := 0
 	for rows.Next() {
 		err = rows.Scan(&eventVersion, &eventType, &eventAggregateID, &aggregateType, &commandID, &data)
@@ -192,7 +190,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		if err != nil {
 			return events, err
 		}
-		if data != nil{
+		if data != nil {
 			if err = decode(data, &dataType); err != nil {
 				return events, err
 			}
@@ -238,7 +236,7 @@ func decode(rawData json.RawMessage, value interface{}) error {
 			return errors.New("scan could not unmarshal to interface{}")
 		}
 
-	} else{
+	} else {
 		return errors.New("decode error, null value found")
 	}
 	return nil
