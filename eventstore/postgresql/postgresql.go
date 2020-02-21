@@ -82,7 +82,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	if err != nil {
 		return err
 	}
-	defer c.connector.Close()
+	//defer c.connector.Close()
 
 	err = tx.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
 
@@ -164,7 +164,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer c.connector.Close()
+	//defer c.connector.Close()
 
 	err = tx.QueryRow("SELECT version FROM events WHERE aggregate_id = $1", aggregateID).Scan(&version)
 	if err != nil {
