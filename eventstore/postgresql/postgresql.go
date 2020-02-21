@@ -110,8 +110,16 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 			return err
 		}
 	}
+
 	query := `INSERT INTO eventdetails (_id, version, type, aggregate_id, aggregate_type, command_id, timestamp, raw_data) 
-			  VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
+			  VALUES(?, ?, ?, ?, ?, ?, ?, ?)`
+	stmt, err := c.connector.Prepare(query)
+	if err != nil {
+		//tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
 	for i, event := range events {
 		// Encode the specific data of the event
 		currentVersion = 1 + version + i
@@ -119,7 +127,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		if err != nil {
 			return err
 		}
-		_, err = c.connector.Exec(query, event.ID, currentVersion, event.Type, aggregate.ID,
+		_, err = stmt.Exec(event.ID, currentVersion, event.Type, aggregate.ID,
 			event.AggregateType, event.CommandID, time.Now(), raw)
 		if err != nil {
 			//tx.Rollback()
