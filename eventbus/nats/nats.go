@@ -35,7 +35,7 @@ func (c *Client) Publish(event triper.Event, bucket, subset string) error {
 		return err
 	}
 
-	//defer nc.Close()
+	defer nc.Close()
 
 	blob, err := json.Marshal(event)
 	if err != nil {
