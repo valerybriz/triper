@@ -172,7 +172,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return nil, err
 	}
 
-	rows, err := tx.Query("SELECT * FROM eventsDetails WHERE aggregate_id = $1", aggregateID)
+	rows, err := tx.Query("SELECT * FROM eventdetails WHERE aggregate_id = $1", aggregateID)
 	if err != nil {
 		return nil, err
 	}
