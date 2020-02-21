@@ -85,7 +85,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 	*/
 	//defer c.connector.Close()
 
-	err := c.connector.QueryRow("SELECT _id,  FROM events WHERE _id = $1", aggregateID).Scan(&id)
+	err := c.connector.QueryRow("SELECT _id FROM events WHERE _id = $1", aggregateID).Scan(&id)
 
 	if version == 0 {
 		// If it trows an error there are no previous records with the same id
