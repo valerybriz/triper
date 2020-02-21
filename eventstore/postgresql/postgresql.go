@@ -158,14 +158,12 @@ func (c *Client) Save(events []triper.Event, version int) error {
 func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	var (
 		events   []triper.Event
-		id string
 		version int
 		eventVersion int
 		commandID string
 		aggregateType string
 		eventType string
 		eventAggregateID string
-		timestamp time.Time
 		data json.RawMessage
 	)
 
@@ -180,7 +178,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return nil, err
 	}
 
-	rows, err := tx.Query("SELECT * FROM eventdetails WHERE aggregate_id = $1", aggregateID)
+	rows, err := tx.Query("SELECT version, type, aggregate_id, aggregate_type, command_id, raw_data FROM eventdetails WHERE aggregate_id = $1", aggregateID)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +186,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 	events =  make([]triper.Event, version)
 	i := 0
 	for rows.Next() {
-		err = rows.Scan(&id, &eventVersion, &eventType, &eventAggregateID, &aggregateType, &commandID, &timestamp, &data)
+		err = rows.Scan(&eventVersion, &eventType, &eventAggregateID, &aggregateType, &commandID, &data)
 		if err != nil {
 			return events, err
 		}
