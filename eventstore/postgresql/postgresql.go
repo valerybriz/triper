@@ -111,7 +111,7 @@ func (c *Client) save(events []triper.Event, version int, safe bool) error {
 		}
 	}
 
-	query := `INSERT INTO eventdetails (_id, version, type, aggregate_id, aggregate_type, command_id, timestamp, raw_data) 
+	query := `INSERT INTO eventdetails (_id, version, event_type, aggregate_id, aggregate_type, command_id, timestamp, raw_data) 
 			  VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
 	stmt, err := c.connector.Prepare(query)
 	if err != nil {
@@ -178,7 +178,7 @@ func (c *Client) Load(aggregateID string) ([]triper.Event, error) {
 		return nil, err
 	}
 
-	rows, err := tx.Query("SELECT version, type, aggregate_id, aggregate_type, command_id, raw_data FROM eventdetails WHERE aggregate_id = $1", aggregateID)
+	rows, err := tx.Query("SELECT version, event_type, aggregate_id, aggregate_type, command_id, raw_data FROM eventdetails WHERE aggregate_id = $1", aggregateID)
 	if err != nil {
 		return nil, err
 	}
