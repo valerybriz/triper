@@ -57,7 +57,7 @@ func TestClientSave(t *testing.T) {
 			AggregateID:   "some_id",
 			AggregateType: "some_aggregate_type",
 			CommandID:     "some_command_id",
-			Version:       0,
+			Version:       1,
 			Type:          "deposit_performed",
 			Data:          defaultData,
 		},
@@ -65,7 +65,7 @@ func TestClientSave(t *testing.T) {
 			AggregateID:   "some_id1",
 			AggregateType: "some_aggregate_type1",
 			CommandID:     "some_command_id1",
-			Version:       1,
+			Version:       2,
 			Type:          "deposit_performed",
 			Data:          defaultData,
 		},
@@ -157,9 +157,9 @@ func TestClientLoad(t *testing.T) {
 			AggregateID:   "some_id",
 			AggregateType: "some_aggregate_type",
 			CommandID:     "some_command_id",
-			Version:       0,
+			Version:       1,
 			Type:          "deposit_performed",
-			Data:          defaultData,
+			Data:          &defaultData,
 		},
 
 	}
@@ -179,6 +179,7 @@ func TestClientLoad(t *testing.T) {
 			aggregateID:   "some_id",
 			expectedErr: false,
 			expectedEvents: defaultEvents,
+			expectedPanic: false,
 		},
 	}
 	for _, tt := range tests {
@@ -186,8 +187,6 @@ func TestClientLoad(t *testing.T) {
 			defer func() {
 				if r := recover(); r == nil && tt.expectedPanic {
 					t.Errorf("The test: %s should have panicked!", tt.name)
-				} else{
-					t.Errorf("Found an unexpected error: %s ", r)
 				}
 			}()
 			func() {
@@ -201,7 +200,7 @@ func TestClientLoad(t *testing.T) {
 						return
 					}
 
-					assert.Equal(t, tt.expectedEvents, got)
+					assert.Equal(t, tt.expectedEvents[0], got[0])
 				}
 			}()
 		})
