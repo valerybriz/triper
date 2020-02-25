@@ -37,42 +37,6 @@ func TestClientClose(t *testing.T) {
 	}
 }
 
-func TestClientLoad(t *testing.T) {
-	type fields struct {
-		connector *sql.DB
-		reg       triper.Register
-	}
-	type args struct {
-		aggregateID string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []triper.Event
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				connector: tt.fields.connector,
-				reg:       tt.fields.reg,
-			}
-			got, err := c.Load(tt.args.aggregateID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Load() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-
 func TestClientSave(t *testing.T) {
 	type fields struct {
 		connector *sql.DB
@@ -82,21 +46,19 @@ func TestClientSave(t *testing.T) {
 		events  []triper.Event
 		version int
 	}
-	type payload struct{
-		amount int
+	type DepositPerformed struct {
+		Amount int `json:"ammount"`
 	}
 	defaultRegister := triper.NewEventRegister()
 	defaultClient, _ := NewClient(defaultPgInfo, defaultRegister)
-	defaultData, err := encode(payload{100}); if err!=nil{
-		t.Errorf("Error trying to encode data: %s", err)
-	}
+	defaultData := DepositPerformed{100}
 	defaultEvents := []triper.Event{
 		{
 			AggregateID:   "some_id",
 			AggregateType: "some_aggregate_type",
 			CommandID:     "some_command_id",
 			Version:       0,
-			Type:          "some_event_type",
+			Type:          "deposit_performed",
 			Data:          defaultData,
 		},
 		{
@@ -104,7 +66,7 @@ func TestClientSave(t *testing.T) {
 			AggregateType: "some_aggregate_type1",
 			CommandID:     "some_command_id1",
 			Version:       1,
-			Type:          "some_event_type1",
+			Type:          "deposit_performed",
 			Data:          defaultData,
 		},
 
@@ -182,6 +144,71 @@ func TestClientSave(t *testing.T) {
 	}
 }
 
+func TestClientLoad(t *testing.T) {
+	type DepositPerformed struct {
+		Amount int `json:"ammount"`
+	}
+	defaultRegister := triper.NewEventRegister()
+	defaultRegister.Set(DepositPerformed{})
+	defaultClient, _ := NewClient(defaultPgInfo, defaultRegister)
+	defaultData := DepositPerformed{100}
+	defaultEvents := []triper.Event{
+		{
+			AggregateID:   "some_id",
+			AggregateType: "some_aggregate_type",
+			CommandID:     "some_command_id",
+			Version:       0,
+			Type:          "deposit_performed",
+			Data:          defaultData,
+		},
+
+	}
+
+	tests := []struct {
+		name    string
+		dbClient *Client
+		aggregateID string
+		expectedPanic bool
+		expectedErr bool
+		errorText string
+		expectedEvents []triper.Event
+	}{
+		{
+			name: "load_event_ok",
+			dbClient: defaultClient,
+			aggregateID:   "some_id",
+			expectedErr: false,
+			expectedEvents: defaultEvents,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r == nil && tt.expectedPanic {
+					t.Errorf("The test: %s should have panicked!", tt.name)
+				} else{
+					t.Errorf("Found an unexpected error: %s ", r)
+				}
+			}()
+			func() {
+				got, err := tt.dbClient.Load(tt.aggregateID)
+				if tt.expectedErr {
+					assert.EqualError(t, err, tt.errorText)
+
+				} else {
+					if err != nil {
+						t.Errorf("Load() got an unexpected error = %s", err)
+						return
+					}
+
+					assert.Equal(t, tt.expectedEvents, got)
+				}
+			}()
+		})
+	}
+}
+
+
 func TestNewClient(t *testing.T) {
 	type args struct {
 		psqlInfo string
@@ -201,6 +228,7 @@ func TestNewClient(t *testing.T) {
 		expectedClient    *Client
 		expectedErr bool
 		expectedPanic bool
+		errorText string
 	}{
 		{
 			name: "new_client_ok",
@@ -248,7 +276,7 @@ func TestNewClient(t *testing.T) {
 				got, err := NewClient(tt.args.psqlInfo, tt.args.reg)
 
 				if tt.expectedErr {
-					assert.EqualError(t, err, "")
+					assert.EqualError(t, err, tt.errorText)
 				} else {
 					assert.Equal(t, tt.expectedClient.reg, got.reg)
 					assert.Equal(t, tt.expectedClient.connector.Stats(), got.connector.Stats())
