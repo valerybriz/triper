@@ -181,6 +181,15 @@ func TestClientLoad(t *testing.T) {
 			expectedEvents: defaultEvents,
 			expectedPanic: false,
 		},
+		{
+			name: "load_event_fail",
+			dbClient: defaultClient,
+			aggregateID:   "some_wrong_id",
+			expectedErr: true,
+			errorText: "sql: no rows in result set",
+			expectedEvents: defaultEvents,
+			expectedPanic: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -193,14 +202,15 @@ func TestClientLoad(t *testing.T) {
 				got, err := tt.dbClient.Load(tt.aggregateID)
 				if tt.expectedErr {
 					assert.EqualError(t, err, tt.errorText)
+					return
 
 				} else {
-					if err != nil {
-						t.Errorf("Load() got an unexpected error = %s", err)
-						return
-					}
 
 					assert.Equal(t, tt.expectedEvents[0], got[0])
+				}
+				if err != nil {
+					t.Errorf("Load() got an unexpected error = %s", err)
+					return
 				}
 			}()
 		})
